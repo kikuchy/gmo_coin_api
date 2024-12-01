@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:gmo_coin_api/gmo_coin_api.dart';
+import 'package:gmo_coin_api/src/private_api_client.dart';
 
 void main() async {
   final client = GmoCoinPublicAPIClient();
@@ -22,7 +25,17 @@ void main() async {
   print(klines.data!.last.openTime);
 
   final symbols = await client.getSymbols();
-  print(symbols.data!.first.symbol);
+  print(symbols.messages);
 
   client.close();
+
+  final privateClient = GmoCoinPrivateAPIClient(
+    apiKey: Platform.environment['GMO_COIN_API_KEY']!,
+    secretKey: Platform.environment['GMO_COIN_SECRET_KEY']!,
+  );
+
+  final balances = await privateClient.getBalances();
+  print(balances.data?.first.available);
+
+  privateClient.close();
 }
