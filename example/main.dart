@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:gmo_coin_api/gmo_coin_api.dart';
+import 'package:gmo_coin_api/src/public_realtime_api.dart';
 import 'package:gmo_coin_api/src/private_api_client.dart';
 
 void main() async {
@@ -34,8 +35,14 @@ void main() async {
     secretKey: Platform.environment['GMO_COIN_SECRET_KEY']!,
   );
 
-  final balances = await privateClient.getBalances();
+  final balances = await privateClient.getAssets();
   print(balances.data?.first.available);
 
   privateClient.close();
+
+  final publicRealtimeClient = GmoCoinPublicRealtimeApi();
+
+  publicRealtimeClient.subscribeOrderBooks('BTC_JPY').listen((data) {
+    print(data);
+  });
 }

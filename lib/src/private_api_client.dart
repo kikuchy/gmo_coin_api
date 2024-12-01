@@ -25,7 +25,8 @@ class GmoCoinPrivateAPIClient {
   }
 
   /// 署名を生成します
-  String _generateSignature(String timestamp, String method, String path, [String? body]) {
+  String _generateSignature(String timestamp, String method, String path,
+      [String? body]) {
     final text = timestamp + method + path + (body ?? '');
     final key = utf8.encode(_secretKey);
     final bytes = utf8.encode(text);
@@ -80,7 +81,7 @@ class GmoCoinPrivateAPIClient {
   }
 
   /// 資産残高を取得します
-  Future<GmoCoinResponse<List<Balance>>> getBalances() async {
+  Future<GmoCoinResponse<List<Balance>>> getAssets() async {
     return _request<List<Balance>>(
       path: '/v1/account/assets',
       method: 'GET',
@@ -96,6 +97,117 @@ class GmoCoinPrivateAPIClient {
       path: '/v1/account/tradingVolume',
       method: 'GET',
       fromJson: (data) => TradingVolume.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  /// 日本円の入金履歴を取得します
+  Future<GmoCoinResponse<List<FiatDepositWithdrawalHistory>>>
+      getFiatDepositHistory() async {
+    return _request<List<FiatDepositWithdrawalHistory>>(
+      path: '/v1/account/fiatDeposit/history',
+      method: 'GET',
+      fromJson: (data) => (data as List)
+          .map((e) =>
+              FiatDepositWithdrawalHistory.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  /// 日本円の出金履歴を取得します
+  Future<GmoCoinResponse<List<FiatDepositWithdrawalHistory>>>
+      getFiatWithdrawalHistory() async {
+    return _request<List<FiatDepositWithdrawalHistory>>(
+      path: '/v1/account/fiatWithdrawal/history',
+      method: 'GET',
+      fromJson: (data) => (data as List)
+          .map((e) =>
+              FiatDepositWithdrawalHistory.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  /// 暗号資産の入金履歴を取得します
+  Future<GmoCoinResponse<List<CryptoDepositHistory>>> getCryptoDepositHistory(
+      {String? symbol}) async {
+    return _request<List<CryptoDepositHistory>>(
+      path: '/v1/account/cryptoDeposit/history',
+      method: 'GET',
+      queryParameters: symbol != null ? {'symbol': symbol} : null,
+      fromJson: (data) => (data as List)
+          .map((e) => CryptoDepositHistory.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  /// 暗号資産の出金履歴を取得します
+  Future<GmoCoinResponse<List<CryptoWithdrawalHistory>>>
+      getCryptoWithdrawalHistory({String? symbol}) async {
+    return _request<List<CryptoWithdrawalHistory>>(
+      path: '/v1/account/cryptoWithdrawal/history',
+      method: 'GET',
+      queryParameters: symbol != null ? {'symbol': symbol} : null,
+      fromJson: (data) => (data as List)
+          .map((e) =>
+              CryptoWithdrawalHistory.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  /// 注文を行います
+  Future<GmoCoinResponse<OrderResult>> postOrder({
+    required String symbol,
+    required String side,
+    required String executionType,
+    required String timeInForce,
+    String? price,
+    String? losscutPrice,
+    String? size,
+  }) async {
+    return _request<OrderResult>(
+      path: '/v1/order',
+      method: 'POST',
+      body: {
+        'symbol': symbol,
+        'side': side,
+        'executionType': executionType,
+        'timeInForce': timeInForce,
+        if (price != null) 'price': price,
+        if (losscutPrice != null) 'losscutPrice': losscutPrice,
+        if (size != null) 'size': size,
+      },
+      fromJson: (data) => OrderResult.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  /// 注文をキャンセルします
+  Future<GmoCoinResponse<void>> cancelOrder(String orderId) async {
+    return _request<void>(
+      path: '/v1/order',
+      method: 'POST',
+      body: {
+        'orderId': orderId,
+      },
+      fromJson: (_) {},
+    );
+  }
+
+  /// 注文の一覧を取得します
+  Future<GmoCoinResponse<List<Order>>> getOrders({
+    String? symbol,
+    String? orderId,
+    String? status,
+  }) async {
+    return _request<List<Order>>(
+      path: '/v1/orders',
+      method: 'GET',
+      queryParameters: {
+        if (symbol != null) 'symbol': symbol,
+        if (orderId != null) 'orderId': orderId,
+        if (status != null) 'status': status,
+      },
+      fromJson: (data) => (data as List)
+          .map((e) => Order.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -140,4 +252,149 @@ class TradingVolume {
       takerFee: double.parse(json['takerFee'] as String),
     );
   }
-} 
+}
+
+class FiatDepositWithdrawalHistory {
+  final int amount;
+  final double fee;
+  final String status;
+  final String symbol;
+  final DateTime timestamp;
+
+  const FiatDepositWithdrawalHistory({
+    required this.amount,
+    required this.fee,
+    required this.status,
+    required this.symbol,
+    required this.timestamp,
+  });
+
+  factory FiatDepositWithdrawalHistory.fromJson(Map<String, dynamic> json) {
+    return FiatDepositWithdrawalHistory(
+      amount: int.parse(json['amount'] as String),
+      fee: double.parse(json['fee'] as String),
+      status: json['status'] as String,
+      symbol: json['symbol'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+    );
+  }
+}
+
+/// 暗号資産の入金履歴
+class CryptoDepositHistory {
+  final String symbol;
+  final String address;
+  final String txHash;
+  final String amount;
+  final DateTime timestamp;
+  final String status;
+
+  const CryptoDepositHistory({
+    required this.symbol,
+    required this.address,
+    required this.txHash,
+    required this.amount,
+    required this.timestamp,
+    required this.status,
+  });
+
+  factory CryptoDepositHistory.fromJson(Map<String, dynamic> json) {
+    return CryptoDepositHistory(
+      symbol: json['symbol'] as String,
+      address: json['address'] as String,
+      txHash: json['txHash'] as String,
+      amount: json['amount'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      status: json['status'] as String,
+    );
+  }
+}
+
+/// 暗号資産の出金履歴
+class CryptoWithdrawalHistory {
+  final String symbol;
+  final String address;
+  final String txHash;
+  final String amount;
+  final double fee;
+  final DateTime timestamp;
+  final String status;
+
+  const CryptoWithdrawalHistory({
+    required this.symbol,
+    required this.address,
+    required this.txHash,
+    required this.amount,
+    required this.fee,
+    required this.timestamp,
+    required this.status,
+  });
+
+  factory CryptoWithdrawalHistory.fromJson(Map<String, dynamic> json) {
+    return CryptoWithdrawalHistory(
+      symbol: json['symbol'] as String,
+      address: json['address'] as String,
+      txHash: json['txHash'] as String,
+      amount: json['amount'] as String,
+      fee: double.parse(json['fee'] as String),
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      status: json['status'] as String,
+    );
+  }
+}
+
+/// 注文結果
+class OrderResult {
+  final String orderId;
+
+  const OrderResult({required this.orderId});
+
+  factory OrderResult.fromJson(Map<String, dynamic> json) {
+    return OrderResult(orderId: json['orderId'] as String);
+  }
+}
+
+/// 注文情報
+class Order {
+  final String orderId;
+  final String symbol;
+  final String side;
+  final String executionType;
+  final String? settleType;
+  final String size;
+  final String? executedSize;
+  final String? price;
+  final String? losscutPrice;
+  final String status;
+  final DateTime timestamp;
+
+  const Order({
+    required this.orderId,
+    required this.symbol,
+    required this.side,
+    required this.executionType,
+    this.settleType,
+    required this.size,
+    this.executedSize,
+    this.price,
+    this.losscutPrice,
+    required this.status,
+    required this.timestamp,
+  });
+
+  factory Order.fromJson(Map<String, dynamic> json) {
+    return Order(
+      orderId: json['orderId'] as String,
+      symbol: json['symbol'] as String,
+      side: json['side'] as String,
+      executionType: json['executionType'] as String,
+      settleType: json['settleType'] as String?,
+      size: json['size'] as String,
+      executedSize: json['executedSize'] as String?,
+      price: json['price'] as String?,
+      losscutPrice: json['losscutPrice'] as String?,
+      status: json['status'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+    );
+  }
+}
