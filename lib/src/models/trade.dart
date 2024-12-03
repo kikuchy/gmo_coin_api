@@ -1,9 +1,9 @@
 /// 取引履歴
 class Trade {
-  final String timestamp;
-  final String side;
-  final String price;
-  final String size;
+  final DateTime timestamp;
+  final TradeSide side;
+  final double price;
+  final double size;
 
   const Trade({
     required this.timestamp,
@@ -14,10 +14,15 @@ class Trade {
 
   factory Trade.fromJson(Map<String, dynamic> json) {
     return Trade(
-      timestamp: json['timestamp'] as String,
-      side: json['side'] as String,
-      price: json['price'] as String,
-      size: json['size'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      side: TradeSide.values.firstWhere((e) => e.name == json['side']),
+      price: double.parse(json['price'] as String),
+      size: double.parse(json['size'] as String),
     );
   }
+}
+
+enum TradeSide {
+  buy,
+  sell,
 }

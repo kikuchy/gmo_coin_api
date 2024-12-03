@@ -1,7 +1,7 @@
 /// 板情報のエントリー
 class OrderBookEntry {
-  final String price;
-  final String size;
+  final double price;
+  final double size;
 
   const OrderBookEntry({
     required this.price,
@@ -10,8 +10,8 @@ class OrderBookEntry {
 
   factory OrderBookEntry.fromJson(Map<String, dynamic> json) {
     return OrderBookEntry(
-      price: json['price'] as String,
-      size: json['size'] as String,
+      price: double.parse(json['price'] as String),
+      size: double.parse(json['size'] as String),
     );
   }
 }

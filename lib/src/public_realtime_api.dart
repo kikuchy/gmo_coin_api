@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:gmo_coin_api/src/models/orderbook.dart';
+import 'package:gmo_coin_api/src/models/ticker.dart';
+import 'package:gmo_coin_api/src/models/trade.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// GMOコインのPublic WebSocket APIクライアント
@@ -40,21 +43,33 @@ class GmoCoinPublicRealtimeApi {
   }
 
   /// 板情報の購読開始
-  Stream<Map<String, dynamic>> subscribeOrderBooks(String symbol) async* {
+  Stream<OrderBook> subscribeOrderBooks(String symbol) async* {
     await _sendRequest('orderbooks', {'symbol': symbol});
-    yield* _controller.stream.where((data) => data['channel'] == 'orderbooks');
+    yield* _controller.stream
+        .where((data) => data['channel'] == 'orderbooks')
+        .map((data) => OrderBook.fromJson(data));
   }
 
   /// 最新レートの購読開始
-  Stream<Map<String, dynamic>> subscribeTicker(String symbol) async* {
+  Stream<Ticker> subscribeTicker(String symbol) async* {
     await _sendRequest('ticker', {'symbol': symbol});
-    yield* _controller.stream.where((data) => data['channel'] == 'ticker');
+    yield* _controller.stream
+        .where((data) => data['channel'] == 'ticker')
+        .map((data) => Ticker.fromJson(data));
   }
 
   /// 取引履歴の購読開始
-  Stream<Map<String, dynamic>> subscribeTrades(String symbol) async* {
-    await _sendRequest('trades', {'symbol': symbol});
-    yield* _controller.stream.where((data) => data['channel'] == 'trades');
+  Stream<Trade> subscribeTrades(
+    String symbol, {
+    bool takerOnly = false,
+  }) async* {
+    await _sendRequest(
+      'trades',
+      {'symbol': symbol, if (takerOnly) 'option': 'TAKER_ONLY'},
+    );
+    yield* _controller.stream
+        .where((data) => data['channel'] == 'trades')
+        .map((data) => Trade.fromJson(data));
   }
 
   // WebSocketメッセージ送信
